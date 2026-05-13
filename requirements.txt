@@ -1,0 +1,52 @@
+# =============================================================================
+# TFM — Forecasting de Demanda Energética en España
+# Dependencias del proyecto
+#
+# Instalación: pip install -r requirements.txt
+# Compatible con Google Colab (CPU) y entorno local
+# =============================================================================
+
+# --- Entorno y configuración ---
+python-dotenv>=1.0.0
+
+# --- Ingesta y manipulación de datos ---
+requests>=2.31.0
+pandas>=2.0.0
+numpy>=1.24.0
+pyarrow>=14.0.0          # Para guardar en formato Parquet
+
+# --- Calendario y festivos ---
+holidays>=0.38
+
+# --- Visualización ---
+matplotlib>=3.7.0
+seaborn>=0.12.0
+plotly>=5.18.0
+
+# --- Feature engineering y preprocesado ---
+scikit-learn>=1.3.0
+feature-engine>=1.6.0
+
+# --- Modelos estadísticos (baselines) ---
+statsmodels>=0.14.0
+prophet>=1.1.5
+
+# --- Machine Learning (modelo principal) ---
+lightgbm>=4.1.0
+optuna>=3.4.0             # Tuning de hiperparámetros
+
+# --- Deep Learning (LSTM, opcional) ---
+tensorflow>=2.14.0        # Comentar si no se usa en local; en Colab ya está disponible
+
+# --- Interpretabilidad ---
+shap>=0.44.0
+
+# --- Métricas ---
+# (incluidas en scikit-learn)
+
+# --- Dashboard ---
+streamlit>=1.29.0
+
+# --- Utilidades ---
+tqdm>=4.66.0              # Barras de progreso en las descargas
+joblib>=1.3.0             # Serialización de modelos sklearn

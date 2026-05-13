@@ -1,0 +1,57 @@
+# =============================================================================
+# TFM — Forecasting de Demanda Energética en España
+# .gitignore
+# =============================================================================
+
+# --- Credenciales y configuración local (NUNCA subir al repo) ---
+.env
+config.py
+secrets.py
+*.key
+
+# --- Datos (demasiado pesados para GitHub; se regeneran con los scripts) ---
+data/raw/*
+data/processed/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+
+# --- Modelos serializados (pueden pesar cientos de MB) ---
+models/*
+!models/.gitkeep
+*.pkl
+*.h5
+*.joblib
+*.onnx
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.pyo
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# --- Entornos virtuales ---
+venv/
+.venv/
+env/
+ENV/
+
+# --- Jupyter ---
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# --- IDEs ---
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# --- Logs y temporales ---
+*.log
+*.tmp
+*.cache
