@@ -64,7 +64,7 @@ Necesitáis dos API keys (ambas gratuitas):
 
 | API | Registro | Tiempo |
 |-----|----------|--------|
-| REE / e·sios | [esios.ree.es](https://esios.ree.es) | 1-2 días laborables |
+| REE / e·sios | [esios.ree.es](https://esios.ree.es) |
 | AEMET OpenData | [opendata.aemet.es](https://opendata.aemet.es) | Inmediato |
 
 ### 4. Descargar los datos históricos
@@ -96,17 +96,6 @@ python src/ingestion/build_dataset.py
 | Prophet | Estadístico aditivo | Baseline con festivos |
 | **LightGBM** | Gradient Boosting | **Modelo principal** |
 | LSTM | Deep Learning | Experimento opcional |
-
----
-
-## Equipo
-
-| Persona | Rol |
-|---------|-----|
-| A | Data Engineer |
-| B | Analista / EDA |
-| C | ML Engineer |
-| D | Business + Deploy |
 
 ---
 
