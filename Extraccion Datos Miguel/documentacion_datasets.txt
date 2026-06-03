@@ -1,0 +1,472 @@
+================================================================================
+TFM — FORECASTING DE DEMANDA ENERGÉTICA EN ESPAÑA
+Documentación de datasets meteorológicos y demográficos
+Script: ine_openmeteo_extractor.py
+================================================================================
+
+ÍNDICE
+  1. Contexto: para qué sirven estos datos en el TFM
+  2. Fuentes de datos
+  3. Decisiones de diseño (ciudades y período temporal)
+  4. Datasets RAW generados
+     4.1  meteo_horario
+     4.2  meteo_diario
+     4.3  poblacion_ciudades
+     4.4  variacion_poblacion
+  5. Dataset PROCESADO generado
+     5.1  temperatura_nacional_ponderada
+  6. Qué son HDD y CDD
+  7. Cómo se cruzan estos datos con la demanda de REE
+  8. Próximos scripts del pipeline
+
+
+================================================================================
+1. CONTEXTO: PARA QUÉ SIRVEN ESTOS DATOS EN EL TFM
+================================================================================
+
+El objetivo del TFM es predecir la demanda eléctrica peninsular española hora
+a hora con 7 días de antelación. La demanda eléctrica depende principalmente de:
+
+  · QUIÉN consume  → población (cuánta gente hay en cada zona)
+  · EN QUÉ condiciones → temperatura, luz solar, viento, humedad
+
+Este script extrae exactamente esos dos bloques:
+  · Open-Meteo (ERA5): variables meteorológicas horarias y diarias
+  · INE Padrón Municipal: población por ciudad para ponderar el clima
+
+Los datasets generados aquí NO son la variable objetivo del modelo (esa es
+la demanda en MW de REE). Son las FEATURES (variables predictoras) que el
+modelo usará para aprender el patrón demanda ↔ clima ↔ tiempo.
+
+
+================================================================================
+2. FUENTES DE DATOS
+================================================================================
+
+OPEN-METEO (https://open-meteo.com/)
+  · API de archivo histórico (ERA5 — reanálisis ECMWF)
+  · Sin límite de llamadas, sin registro, sin coste
+  · Cobertura histórica desde 1940, sin huecos temporales
+  · ERA5 es un reanálisis: reconstrucción física del clima pasado basada en
+    observaciones satelitales + modelos atmosféricos. Ligeramente más suavizado
+    que una estación meteorológica puntual, pero consistente y completo.
+  · Alternativa/complemento: AEMET OpenData (requiere API key gratuita).
+    Se recomienda usar AEMET para validación cruzada de temperatura.
+
+INE — INSTITUTO NACIONAL DE ESTADÍSTICA (https://www.ine.es)
+  · API TEMPUS: https://servicios.ine.es/wstempus/js/ES/
+  · Datos del Padrón Municipal Continuo (actualización anual)
+  · Sin límite de llamadas, sin coste
+  · Tablas usadas:
+      2852 → Población por provincias y sexo
+      2919 → Variación anual de población en capitales de provincia
+
+
+================================================================================
+3. DECISIONES DE DISEÑO
+================================================================================
+
+── CIUDADES ELEGIDAS ──────────────────────────────────────────────────────────
+
+Se eligieron 7 capitales peninsulares aplicando dos criterios simultáneos:
+  1. Mayor masa poblacional → mayor representatividad del consumo eléctrico
+  2. Diversidad climática → el modelo aprende patrones de todas las zonas
+
+  Ciudad      Clima               Por qué es relevante para la demanda
+  ─────────── ─────────────────── ────────────────────────────────────────────
+  Madrid      Continental seco    Mayor peso poblacional. Veranos calurosos
+                                  + inviernos fríos → HDD y CDD altos.
+  Barcelona   Mediterráneo húmedo 2ª área metropolitana. Humedad alta amplifica
+                                  el efecto del calor en el uso de AC.
+  Valencia    Mediterráneo coste. Alta demanda de refrigeración en verano.
+                                  Inviernos suaves (CDD domina).
+  Sevilla     Mediterráneo cálido Picos extremos de calor (récords >45°C).
+                                  Correlación muy alta CDD → demanda AC.
+  Zaragoza    Semiárido contin.   Temperaturas más extremas de la península.
+                                  El "Cierzo" (viento fuerte) baja la sensación
+                                  térmica en invierno radicalmente.
+  Málaga      Mediterráneo litor. Turismo → demanda estacional pronunciada.
+                                  Costa cálida todo el año.
+  Bilbao      Oceánico + industr. Representa el norte húmedo y templado.
+                                  Alta demanda industrial del País Vasco.
+
+EXCLUIDAS conscientemente:
+  · Las Palmas de GC y Palma de Mallorca → pertenecen a sistemas eléctricos
+    insulares independientes del sistema peninsular de REE. Incluirlas
+    contaminaría el modelo con datos de una red eléctrica distinta.
+
+── PERÍODO TEMPORAL ───────────────────────────────────────────────────────────
+
+  Ventana: últimos 5 años completos desde la fecha de ejecución
+           (para 2026 → 2021-01-01 hasta hoy − 5 días)
+
+  Por qué 5 años y no más:
+    · 2020: COVID-19 provocó una caída de ~15% en la demanda eléctrica por
+      cierre de industria y comercio. El modelo aprendería un patrón
+      estructuralmente anómalo que no se repetirá.
+    · 2019 y antes: el parque fotovoltaico español era 3 veces menor.
+      La relación radiación solar → demanda neta era muy diferente a la actual.
+    · 2021–presente: "nuevo normal" con alta penetración renovable y
+      comportamiento post-pandemia.
+
+  5 años proporciona ~43.000 horas de entrenamiento, suficiente para que
+  LightGBM aprenda estacionalidades múltiples (diaria, semanal, anual).
+
+  NOTA: el período 2021-2022 incluye la crisis energética (precios del gas
+  disparados). Se recomienda añadir una variable binaria is_crisis_energetica
+  en el feature engineering para que el modelo lo trate como contexto especial.
+
+
+================================================================================
+4. DATASETS RAW  (carpeta data/raw/)
+================================================================================
+
+Todos los datasets RAW se guardan en dos formatos:
+  · .csv    → legible con Excel, editable, para exploración rápida
+  · .parquet → binario comprimido, óptimo para carga en pandas/Python
+
+
+────────────────────────────────────────────────────────────────────────────────
+4.1  meteo_horario.csv / .parquet
+────────────────────────────────────────────────────────────────────────────────
+
+Descripción:
+  Variables meteorológicas hora a hora para las 7 ciudades.
+  Es el dataset que se unirá directamente con la demanda horaria de REE.
+
+Dimensiones aproximadas:
+  ~320.000 filas  (7 ciudades × 5 años × 8.760 horas/año)
+  14 columnas
+
+Columnas:
+
+  datetime           Fecha y hora completa (ej: 2021-01-15 14:00)
+                     CLAVE DE JOIN con los datos de REE.
+                     Zona horaria: Europe/Madrid (UTC+1 invierno, UTC+2 verano)
+
+  fecha              Solo la fecha (2021-01-15)
+  hora               Solo la hora en formato HH:MM (14:00)
+  hora_num           Hora como número entero 0-23 (para features cíclicas)
+  año                Año (2021, 2022…)
+  mes                Mes (1-12)
+
+  ciudad             Nombre de la ciudad (Madrid, Barcelona…)
+  latitud            Coordenada geográfica (para referencia)
+  longitud           Coordenada geográfica (para referencia)
+
+  temperatura        °C a 2 metros del suelo.
+                     Relación en U con la demanda: frío → calefacción,
+                     calor → aire acondicionado.
+
+  sensacion_termica  °C percibidos (wind chill en invierno / heat index en verano).
+                     MEJOR predictor que la temperatura real para el uso de
+                     calefacción y AC: las personas regulan sus sistemas según
+                     cómo sienten el calor, no según el termómetro exacto.
+
+  humedad_relativa   % de humedad en el aire.
+                     Con calor + humedad alta el AC trabaja más porque debe
+                     deshumidificar además de enfriar. Madrid (30%) vs.
+                     Valencia (65%) generan demanda diferente al mismo 35°C.
+
+  velocidad_viento   km/h a 10 metros de altura.
+                     Doble efecto:
+                       (1) Amplifica la sensación de frío (factor chill)
+                       (2) Predice cuánta energía eólica se está generando
+                           → la demanda NETA = demanda bruta − generación eólica
+
+  radiacion_solar    W/m² instantáneos de radiación solar global.
+                     Doble efecto:
+                       (1) Más sol en verano → más calor → más AC
+                       (2) Predice generación fotovoltaica en ese momento
+                           → la comercializadora necesita comprar menos en el pool
+
+  precipitacion      mm de lluvia en esa hora.
+                     Días de lluvia → nublado → menos calor → menos AC.
+                     También correlaciona con menor actividad exterior.
+
+  fuente             "Open-Meteo (ERA5)" — trazabilidad del dato
+
+
+────────────────────────────────────────────────────────────────────────────────
+4.2  meteo_diario.csv / .parquet
+────────────────────────────────────────────────────────────────────────────────
+
+Descripción:
+  Resumen meteorológico diario por ciudad. Incluye amanecer y atardecer,
+  que determinan los patrones de iluminación artificial. También incluye
+  los HDD y CDD calculados por ciudad (ver sección 6 para la explicación).
+
+Dimensiones aproximadas:
+  ~12.700 filas  (7 ciudades × 5 años × 365 días/año)
+  17 columnas
+
+Columnas:
+
+  fecha              Fecha del día
+  año / mes / dia    Descomposición temporal
+  ciudad             Ciudad
+  latitud / longitud Coordenadas
+
+  temperatura_max    °C máximos del día
+  temperatura_min    °C mínimos del día
+  temperatura_media  °C media del día → base para calcular HDD y CDD
+
+  sensacion_max      Sensación térmica máxima del día
+  sensacion_min      Sensación térmica mínima del día
+
+  hora_amanecer      Hora de salida del sol (formato HH:MM, ej: 07:45)
+                     Determina cuándo se enciende la iluminación artificial
+                     en oficinas y hogares. En diciembre amanece a las 08:30;
+                     en junio a las 06:45 → diferencia de ~1.500 MW en demanda
+                     de iluminación.
+
+  hora_atardecer     Hora de puesta de sol (formato HH:MM, ej: 20:15)
+                     Marca el pico de demanda vespertino: coincide con el
+                     regreso a casa + encendido de iluminación. En verano
+                     este pico se desplaza hacia las 22h.
+
+  radiacion_acum.    MJ/m² totales del día. Cuánta energía solar recibió
+                     esa ciudad → estimación de generación fotovoltaica diaria.
+
+  viento_max         Ráfaga máxima del día en km/h. Picos de generación eólica.
+
+  precipitacion_tot. mm totales del día.
+
+  HDD                Grados-día de calefacción (ver sección 6)
+  CDD                Grados-día de refrigeración (ver sección 6)
+
+  fuente             "Open-Meteo (ERA5)"
+
+
+────────────────────────────────────────────────────────────────────────────────
+4.3  poblacion_ciudades.csv / .parquet
+────────────────────────────────────────────────────────────────────────────────
+
+Descripción:
+  Población total censada (Padrón Municipal) para las provincias de las 7
+  ciudades del estudio, por año. Se usa exclusivamente para calcular los pesos
+  de la temperatura nacional ponderada (dataset procesado 5.1).
+
+Dimensiones aproximadas:
+  ~35 filas  (7 ciudades × 5 años)
+  5 columnas
+
+Columnas:
+
+  año            Año del padrón (actualización anual)
+  ciudad         Madrid, Barcelona, Valencia, Sevilla, Zaragoza, Málaga, Bilbao
+  provincia_raw  Nombre oficial de la provincia en INE
+  poblacion      Habitantes censados en la provincia ese año
+  fuente         "INE – Padrón Municipal Continuo"
+
+Por qué provincia y no municipio:
+  El calor en Madrid afecta no solo a la capital sino a Alcalá, Getafe,
+  Leganés, Alcobendas, etc. La provincia captura mejor el área de influencia
+  climática real sobre el consumo eléctrico.
+
+Por qué datos anuales del INE y no un número fijo:
+  La población de Madrid creció un ~8% entre 2021 y 2024. Un peso fijo
+  daría importancia incorrecta a los años iniciales en la ponderación.
+
+
+────────────────────────────────────────────────────────────────────────────────
+4.4  variacion_poblacion.csv / .parquet
+────────────────────────────────────────────────────────────────────────────────
+
+Descripción:
+  Variación anual de población en las capitales: nacimientos, defunciones,
+  saldo migratorio y variación neta. No es feature directa del modelo, pero
+  contextualiza cambios estructurales en la demanda base.
+
+Columnas:
+
+  año            Año
+  municipio      Capital de provincia (Madrid, Barcelona…)
+  indicador      Tipo de variación:
+                   · Nacimientos
+                   · Defunciones
+                   · Saldo migratorio (inmigración − emigración)
+                   · Variación total (cambio neto de población)
+  variacion      Valor numérico del cambio (personas)
+  fuente         "INE – Padrón Municipal Continuo"
+
+Utilidad en el TFM:
+  Si el modelo predice mal un año concreto, este dataset permite cruzar
+  si hubo un cambio demográfico brusco ese año que explique el error.
+  También es útil para el análisis de tendencia a largo plazo en la memoria.
+
+
+================================================================================
+5. DATASET PROCESADO  (carpeta data/processed/)
+================================================================================
+
+────────────────────────────────────────────────────────────────────────────────
+5.1  temperatura_nacional_ponderada.csv / .parquet
+────────────────────────────────────────────────────────────────────────────────
+
+Descripción:
+  LA FEATURE METEOROLÓGICA PRINCIPAL DEL MODELO.
+  Una temperatura "sintética" que representa a toda España en un solo número
+  diario, calculada como media ponderada de las 7 ciudades con peso
+  proporcional a su población según el Padrón INE.
+
+Dimensiones aproximadas:
+  ~1.800 filas  (1 fila por día × 5 años)
+  10 columnas
+
+Fórmula:
+  T_nacional = Σ (T_ciudad_i × peso_i)
+  donde peso_i = población_provincia_i / Σ todas las poblaciones
+
+  Ejemplo con datos aproximados:
+    Madrid    3.400k hab → peso 0.34 × T_Madrid
+    Barcelona 1.700k hab → peso 0.17 × T_Barcelona
+    Valencia    900k hab → peso 0.09 × T_Valencia
+    Sevilla     700k hab → peso 0.07 × T_Sevilla
+    Zaragoza    700k hab → peso 0.07 × T_Zaragoza
+    Málaga      600k hab → peso 0.06 × T_Málaga
+    Bilbao      350k hab → peso 0.05 × T_Bilbao
+                          ──────────────────────────
+                          T_nacional = suma ponderada
+
+Columnas:
+
+  fecha            Fecha del día
+  año / mes        Descomposición temporal
+
+  t_nac_media      Temperatura media nacional ponderada por población (°C)
+                   → feature principal para predicción de demanda diaria
+
+  t_nac_max        Temperatura máxima nacional ponderada (°C)
+  t_nac_min        Temperatura mínima nacional ponderada (°C)
+
+  sensacion_nac    Sensación térmica nacional ponderada (°C)
+                   → en muchos estudios mejora el ajuste del modelo frente
+                   a la temperatura real, especialmente en días de viento
+
+  HDD              Grados-día de calefacción (ver sección 6)
+                   → proxy directo de consumo de calefacción eléctrica
+                   y bomba de calor ese día
+
+  CDD              Grados-día de refrigeración (ver sección 6)
+                   → proxy directo de consumo de aire acondicionado
+
+  ciudades_usadas  Número de ciudades con datos disponibles ese día (control
+                   de calidad: debería ser siempre 7)
+
+  fuente           "Open-Meteo (ERA5) + INE Padrón"
+
+
+================================================================================
+6. QUÉ SON HDD Y CDD
+================================================================================
+
+Son métricas estándar del sector energético que resuelven el problema de que
+la relación temperatura-demanda no es lineal, sino en FORMA DE U.
+
+  Demanda eléctrica
+    │                                ●  ← AC máximo (40°C)
+    │       ●
+    │            ●●●●●●●             ← zona de confort, nadie pone nada
+    │       ●
+    │  ●                             ← calefacción máxima (-5°C)
+    └──────────────────────────────── Temperatura
+          -5°       18°       40°
+                     ↑
+              temperatura base de confort
+
+Si le damos la temperatura cruda al modelo, tiene que aprender esa forma de U
+por sí solo. Con HDD/CDD ya se la damos resuelta y separada en dos señales
+independientes.
+
+HDD — Heating Degree Days (Grados-día de calefacción)
+──────────────────────────────────────────────────────
+  HDD = max(0,  18 − T_media_del_día)
+
+  Ejemplo:
+    Día de enero en Madrid:  T_media = 5°C  → HDD = 13  (mucha calefacción)
+    Día de octubre:          T_media = 15°C → HDD = 3   (algo de calefacción)
+    Día de julio:            T_media = 28°C → HDD = 0   (nadie pone calefacción)
+
+  Interpretación: cada punto de HDD equivale aproximadamente a 150-200 MW
+  adicionales de demanda eléctrica peninsular.
+
+CDD — Cooling Degree Days (Grados-día de refrigeración)
+─────────────────────────────────────────────────────────
+  CDD = max(0,  T_media_del_día − 18)
+
+  Ejemplo:
+    Día de julio en Sevilla: T_media = 36°C → CDD = 18  (AC a tope)
+    Día de junio en Madrid:  T_media = 24°C → CDD = 6   (bastante AC)
+    Día de enero en Bilbao:  T_media = 9°C  → CDD = 0   (nadie pone el AC)
+
+  Interpretación: cada punto de CDD equivale aproximadamente a 200-250 MW
+  adicionales de demanda (el AC consume más que la calefacción porque tiene
+  menor eficiencia energética).
+
+Por qué 18°C como base:
+  Es el estándar energético europeo (norma ISO 15927-6). Por debajo de 18°C
+  los edificios necesitan calefacción; por encima de 18°C empiezan a necesitar
+  ventilación o refrigeración. En España el umbral real de uso masivo de AC
+  está más cerca de 22-24°C, pero 18°C es la base de cálculo estándar para
+  comparabilidad internacional.
+
+Ventaja frente a temperatura bruta:
+  Con temperatura cruda, 5°C y 31°C generan demanda alta pero por razones
+  opuestas — el modelo puede confundirse. Con HDD/CDD:
+    Día de  5°C → HDD=13, CDD=0  → señal clara: calefacción activa
+    Día de 18°C → HDD=0,  CDD=0  → señal clara: demanda mínima de base
+    Día de 31°C → HDD=0,  CDD=13 → señal clara: refrigeración activa
+
+
+================================================================================
+7. CÓMO SE CRUZAN ESTOS DATOS CON LA DEMANDA DE REE
+================================================================================
+
+La variable OBJETIVO del modelo (lo que queremos predecir) es la demanda
+eléctrica peninsular en MW, disponible hora a hora desde la API de REE/e·sios
+(indicador 460).
+
+El cruce se hace por la columna datetime (fecha + hora):
+
+  meteo_horario.parquet          +    REE demanda (fetch_ree.py)
+  ──────────────────────────────      ──────────────────────────
+  datetime  | temp | HDD | ...        datetime  | demanda_MW
+  2021-01-01 00:00 | 4.2 | 13 | ...  2021-01-01 00:00 | 24.832
+  2021-01-01 01:00 | 3.8 | 14 | ...  2021-01-01 01:00 | 23.415
+                     JOIN ON datetime
+                          ↓
+  datetime | demanda_MW | temperatura | HDD | CDD | sensacion | hora | mes | ...
+                ↑               ↑
+           lo que predecimos    features con las que predecimos
+
+El dataset final (build_dataset.py) añadirá además:
+  · Festivos nacionales y autonómicos (librería holidays)
+  · Variables de lag: demanda t-24h, demanda t-168h (mismo hora ayer/semana)
+  · Codificación cíclica: sin(hora), cos(hora) para capturar circularidad
+  · Indicadores binarios: es_fin_de_semana, es_agosto, es_navidad
+
+
+================================================================================
+8. PRÓXIMOS SCRIPTS DEL PIPELINE
+================================================================================
+
+  fetch_ree.py       Descarga demanda horaria REE (indicador 460, API e·sios).
+                     Requiere token gratuito de https://www.esios.ree.es/es/desarrolladores
+                     Output: data/raw/demanda_ree.parquet
+
+  build_dataset.py   Merge de REE + meteo_horario + temperatura_nacional_ponderada.
+                     Añade festivos, lags y codificación cíclica de hora.
+                     Output: data/processed/dataset_modelado.parquet
+                     Este archivo es la entrada directa a los modelos.
+
+  feature_eng.py     Feature engineering avanzado sobre dataset_modelado:
+                     lags de temperatura, HDD/CDD acumulados, interacciones
+                     temperatura × hora, festivo × mes.
+                     Output: data/processed/dataset_features.parquet
+
+
+================================================================================
+Documento generado para el grupo de TFM — EBIS Business Techschool
+Máster en Data Science e Inteligencia Artificial
+================================================================================
