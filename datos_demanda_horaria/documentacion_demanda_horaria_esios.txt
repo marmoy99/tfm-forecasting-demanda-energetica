@@ -1,0 +1,326 @@
+================================================================================
+TFM — DEMANDA HORARIA PENINSULAR DESDE E·SIOS
+Notebook: 01_extraccion_demanda_horaria_esios_tfm.ipynb
+Script auxiliar: fetch_esios_demanda_horaria.py
+================================================================================
+
+1. CONTEXTO
+================================================================================
+
+El objetivo del TFM es construir modelos de forecasting de demanda eléctrica
+peninsular española utilizando variables meteorológicas, temporales y
+demográficas.
+
+Además de la demanda real y de la predicción oficial de REE, se incorpora una
+tercera serie procedente de e·sios:
+
+    Demanda horaria peninsular
+
+Esta serie permite analizar diferencias entre distintos indicadores de demanda
+publicados por Red Eléctrica y evaluar cuál resulta más adecuada como variable
+objetivo del modelo.
+
+Actualmente el proyecto contempla tres indicadores principales:
+
+    1293 → Demanda real
+    460  → Predicción de demanda
+    1193 → Demanda horaria
+
+La selección definitiva del target se decidirá durante la fase exploratoria y
+de evaluación del TFM.
+
+================================================================================
+2. FUENTE DE DATOS
+================================================================================
+
+Fuente:
+
+    e·sios / Red Eléctrica
+
+Endpoint:
+
+    https://api.esios.ree.es/indicators/{indicator_id}
+
+Indicador utilizado:
+
+    1193 — Demanda horaria peninsular
+
+Nivel geográfico:
+
+    Península
+
+Frecuencia:
+
+    Horaria
+
+Formato original:
+
+    JSON vía API
+
+Formatos exportados:
+
+    CSV
+    Parquet
+
+Requisito:
+
+    Token personal de e·sios definido como variable de entorno:
+
+        export ESIOS_TOKEN="tu_token"
+
+================================================================================
+3. ESTRUCTURA DEL PIPELINE
+================================================================================
+
+Archivos principales:
+
+    fetch_esios_demanda_horaria.py
+        Script reutilizable de extracción, limpieza, validación y guardado.
+
+    01_extraccion_demanda_horaria_esios_tfm.ipynb
+        Notebook narrativo y ejecutable para documentar la extracción.
+
+Relación con el resto del proyecto:
+
+    demanda_peninsular_horaria
+        Demanda real observada.
+
+    prediccion_demanda_peninsular_horaria
+        Predicción oficial REE.
+
+    demanda_horaria_peninsular
+        Serie horaria adicional para análisis comparativo.
+
+================================================================================
+4. DATASET RAW
+================================================================================
+
+Nombre:
+
+    demanda_horaria_esios_raw
+
+Ruta:
+
+    data/raw/demanda_horaria_esios_raw.csv
+    data/raw/demanda_horaria_esios_raw.parquet
+
+Descripción:
+
+    Respuesta normalizada directamente desde la API de e·sios.
+
+Uso:
+
+    Auditoría, trazabilidad y reprocesamiento.
+
+No se recomienda utilizar directamente para modelado.
+
+================================================================================
+5. DATASET PROCESADO
+================================================================================
+
+Nombre:
+
+    demanda_horaria_peninsular
+
+Ruta:
+
+    data/processed/demanda_horaria_peninsular.csv
+    data/processed/demanda_horaria_peninsular.parquet
+
+Descripción:
+
+    Serie horaria limpia correspondiente al indicador 1193 de e·sios.
+
+Unidad:
+
+    MW
+
+Variable principal:
+
+    demanda_horaria_mw
+
+Clave temporal:
+
+    datetime
+
+Clave auxiliar:
+
+    fecha
+
+Columnas principales:
+
+    datetime
+        Fecha y hora local normalizada.
+
+    datetime_utc
+        Fecha y hora UTC original.
+
+    demanda_horaria_mw
+        Valor horario reportado por e·sios.
+
+    geo_id
+        Identificador geográfico.
+
+    geo_name
+        Nombre geográfico asociado.
+
+    tz_time
+        Zona horaria reportada.
+
+    indicator_id
+        Indicador utilizado en la descarga.
+
+    fecha
+        Fecha en formato YYYY-MM-DD.
+
+    año
+        Año.
+
+    mes
+        Mes.
+
+    dia
+        Día.
+
+    hora
+        Hora.
+
+    dia_semana
+        Día de la semana.
+
+    es_fin_de_semana
+        Indicador binario.
+
+    fuente
+        Fuente del dato.
+
+================================================================================
+6. VALIDACIONES DE CALIDAD
+================================================================================
+
+Validaciones aplicadas:
+
+    - datetime no nulo
+    - demanda_horaria_mw no nula
+    - sin duplicados por datetime
+    - cálculo de horas faltantes
+    - rango temporal cubierto
+    - estadísticos descriptivos básicos
+
+Indicadores QA:
+
+    rows
+    start
+    end
+    duplicated_datetime
+    missing_hours
+    null_demanda_horaria_mw
+    min_demanda_horaria_mw
+    max_demanda_horaria_mw
+    mean_demanda_horaria_mw
+
+================================================================================
+7. RELACIÓN CON LOS OTROS INDICADORES DE DEMANDA
+================================================================================
+
+Durante la fase exploratoria se trabajará con tres series:
+
+    Indicador 1293
+        Demanda real observada.
+
+    Indicador 460
+        Predicción oficial de demanda.
+
+    Indicador 1193
+        Demanda horaria.
+
+Objetivos del análisis:
+
+    - Comparar comportamiento temporal.
+    - Analizar correlaciones.
+    - Detectar diferencias estructurales.
+    - Seleccionar la variable objetivo más adecuada.
+
+Posibles métricas de comparación:
+
+    Correlación de Pearson
+    MAE
+    RMSE
+    MAPE
+
+================================================================================
+8. ENCAJE CON EL PIPELINE METEOROLÓGICO
+================================================================================
+
+La serie puede cruzarse con:
+
+    temperatura_nacional_ponderada
+
+mediante:
+
+    fecha
+
+o con:
+
+    meteo_horario
+
+mediante:
+
+    datetime
+
+El objetivo es construir una tabla unificada para análisis exploratorio y
+modelado.
+
+================================================================================
+9. POSIBLES USOS EN EL MODELADO
+================================================================================
+
+Uso 1
+
+    Variable objetivo alternativa.
+
+Uso 2
+
+    Comparación frente a demanda real.
+
+Uso 3
+
+    Construcción de variables derivadas basadas en diferencias entre series.
+
+Uso 4
+
+    Validación de robustez del modelo frente a distintos indicadores.
+
+================================================================================
+10. DECISIONES DE DISEÑO
+================================================================================
+
+1. Mantener la extracción separada de la demanda real.
+
+2. Conservar datasets RAW y PROCESSED.
+
+3. Mantener compatibilidad temporal con el resto del pipeline.
+
+4. Conservar datetime local para joins.
+
+5. Descargar mediante bloques temporales para mejorar robustez.
+
+6. Posponer la elección definitiva del target hasta finalizar el análisis
+   exploratorio.
+
+
+================================================================================
+11. RESUMEN DE RETENCIÓN
+================================================================================
+
+Este notebook genera la serie de demanda horaria peninsular correspondiente al
+indicador 1193 de e·sios.
+
+Su función principal es complementar el análisis de demanda del TFM y permitir
+la comparación con:
+
+    demanda real (1293)
+    predicción oficial REE (460)
+
+La decisión final sobre qué serie utilizar como variable objetivo se tomará
+tras el análisis exploratorio y la evaluación de resultados.
