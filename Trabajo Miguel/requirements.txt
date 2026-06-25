@@ -1,0 +1,5 @@
+requests>=2.31.0
+pandas>=2.1.0
+numpy>=1.26.0
+pyarrow>=17.0.0
+holidays>=0.99
