@@ -43,6 +43,9 @@ OUTPUT_NAME      = "dataset_modelado"
 
 COMFORT_TEMP = 18.0
 
+# Días con demanda anómala que se suavizan por interpolación ±1 semana
+OUTLIER_DATES = ["2025-04-28", "2025-10-13"]
+
 
 # ═══════════════════════════════════════════════════════════════════
 # CARGA
@@ -55,6 +58,40 @@ def load_demand() -> pd.DataFrame:
     df = df.sort_values("datetime").reset_index(drop=True)
     log.info("  %d filas  |  %s → %s", len(df), df["datetime"].min(), df["datetime"].max())
     return df
+
+
+def smooth_outliers(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Suaviza días con demanda anómala (apagón del 28-abr-2025, etc.).
+    Para cada hora del día afectado, sustituye demanda_mw por la media
+    de esa misma hora exacta 7 días antes y 7 días después.
+    """
+    df = df.copy()
+    df = df.sort_values("datetime").reset_index(drop=True)
+    df = df.set_index("datetime")
+
+    for date_str in OUTLIER_DATES:
+        target = pd.Timestamp(date_str)
+        mask = (df.index.date == target.date())
+        if not mask.any():
+            log.warning("  Fecha outlier %s no encontrada en el dataset — ignorada.", date_str)
+            continue
+
+        log.info("  Suavizando outlier %s (%d horas)…", date_str, mask.sum())
+        for ts in df.index[mask]:
+            before = ts - pd.Timedelta(days=7)
+            after  = ts + pd.Timedelta(days=7)
+            vals = []
+            if before in df.index:
+                vals.append(df.at[before, "demanda_mw"])
+            if after in df.index:
+                vals.append(df.at[after, "demanda_mw"])
+            if vals:
+                df.at[ts, "demanda_mw"] = round(np.mean(vals), 1)
+            else:
+                log.warning("    No hay datos ±1 semana para %s — fila no modificada.", ts)
+
+    return df.reset_index()
 
 
 def load_meteo_extra() -> pd.DataFrame:
@@ -208,6 +245,8 @@ def build() -> pd.DataFrame:
     log.info(sep)
 
     demand_df    = load_demand()
+    log.info("Suavizando outliers de días anómalos…")
+    demand_df    = smooth_outliers(demand_df)
     meteo_df     = load_meteo()
     meteo_ext_df = load_meteo_extra()
     cal_df       = build_calendar(demand_df["datetime"])
