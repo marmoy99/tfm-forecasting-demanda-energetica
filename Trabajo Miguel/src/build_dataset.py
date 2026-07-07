@@ -42,6 +42,7 @@ METEO_HORARIO    = RAW_DIR  / "meteo_horario.parquet"
 OUTPUT_NAME      = "dataset_modelado"
 
 COMFORT_TEMP = 18.0
+DATASET_END_DATE = "2026-03-22"  # fecha de corte del dataset de modelado
 
 # Días con demanda anómala que se suavizan por interpolación ±1 semana
 OUTLIER_DATES = ["2025-04-28", "2025-10-13"]
@@ -56,6 +57,7 @@ def load_demand() -> pd.DataFrame:
     df = pd.read_csv(DEMAND_CSV, parse_dates=["datetime"])
     df = df[["datetime", "demanda_mw", "hora", "dia_semana", "mes", "es_fin_de_semana"]].copy()
     df = df.sort_values("datetime").reset_index(drop=True)
+    df = df[df["datetime"] <= DATASET_END_DATE].reset_index(drop=True)
     log.info("  %d filas  |  %s → %s", len(df), df["datetime"].min(), df["datetime"].max())
     return df
 
