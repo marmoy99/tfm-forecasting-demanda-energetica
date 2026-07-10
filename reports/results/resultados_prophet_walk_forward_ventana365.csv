@@ -1,5 +1,0 @@
-corte,modelo,tipo_modelo,mape,filas_train,filas_test,train_dias,dias_test,regresores,seasonality_mode,changepoint_prior_scale,error
-2025-02-05,Prophet ventana 365,modelo_candidato,3.9829,8759,72,365,3,HDD;CDD;humedad_relativa;velocidad_viento;radiacion_solar,multiplicative,0.05,
-2025-05-06,Prophet ventana 365,modelo_candidato,4.3377,8759,72,365,3,HDD;CDD;humedad_relativa;velocidad_viento;radiacion_solar,multiplicative,0.05,
-2025-07-08,Prophet ventana 365,modelo_candidato,4.6001,8759,72,365,3,HDD;CDD;humedad_relativa;velocidad_viento;radiacion_solar,multiplicative,0.05,
-2025-11-04,Prophet ventana 365,modelo_candidato,3.2636,8759,72,365,3,HDD;CDD;humedad_relativa;velocidad_viento;radiacion_solar,multiplicative,0.05,
