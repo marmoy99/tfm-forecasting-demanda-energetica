@@ -5,9 +5,9 @@ Objetivo de esta fase: tener un PRIMER número honesto con el modelo más simple
 posible (solo estacionalidades + festivos, SIN clima). Sirve de referencia:
 todo lo que añadamos después (clima, tuning) tiene que MEJORAR este MAPE.
 
-Estrategia: holdout de los últimos 7 días del dataset.
-  - Entrenamos con todo el histórico menos la última semana.
-  - Predecimos esos 7 días (168 horas) -> es justo el horizonte del caso de negocio.
+Estrategia: holdout de los últimos 3 días del dataset.
+  - Entrenamos con todo el histórico menos esos días.
+  - Predecimos esos 3 días (72 horas) -> es el horizonte del caso de negocio.
   - Medimos MAPE / MAE / RMSE comparando con la demanda real.
 """
 from pathlib import Path
@@ -28,10 +28,15 @@ DATA = ROOT / "data" / "processed" / "dataset_modelado.csv"
 FIGS = ROOT / "reports" / "figures"
 FIGS.mkdir(parents=True, exist_ok=True)
 
-HORIZON = 24 * 7  # 168 horas = 7 días
+# Horizonte del caso de negocio: la comercializadora compra en OMIE a 3 días.
+# Lo importan el resto de scripts (clima, walk-forward, rolling): cambiarlo
+# aquí lo cambia en todos.
+HORIZON_DIAS = 3
+HORIZON = 24 * HORIZON_DIAS  # 72 horas
+
 DEMANDA_MIN_VALIDA = 10_000  # MW; por debajo = dato corrupto -> se interpola
-# Abril 2026 viene corrupto en la fuente (cae ~40% el 1-abr de golpe, dato
-# provisional/incompleto de Esios). Cortamos hasta el último día fiable.
+# Abril 2026 queda FUERA del estudio: el dato de Esios es provisional y cae
+# ~40% de golpe el 1-abr (imposible). El estudio termina el 31-mar-2026.
 FECHA_MAX = "2026-03-31 23:00:00"
 # Apagón ibérico del 28-abr-2025: demanda real cae a ~2.000 MW y tarda ~36h en
 # normalizarse. Evento excepcional NO representativo -> lo imputamos por
@@ -63,6 +68,9 @@ def cargar_datos() -> pd.DataFrame:
     # Imputación del apagón ibérico por semana análoga (t-7d y t+7d)
     s = df.set_index("datetime")["demanda_mw"]
     ventana = s.loc[APAGON_INI:APAGON_FIN].index
+    # 7 días exactos: así caemos en el MISMO día de la semana (lunes con lunes).
+    # Con otro desfase mezclaríamos perfiles distintos (un viernes no se parece
+    # a un lunes) y la imputación metería un sesgo.
     prev = s.reindex(ventana - pd.Timedelta(days=7)).to_numpy()
     post = s.reindex(ventana + pd.Timedelta(days=7)).to_numpy()
     s.loc[ventana] = np.nanmean([prev, post], axis=0)
@@ -82,6 +90,21 @@ def festivos_espana(anios) -> pd.DataFrame:
 # ----------------------------------------------------------------------------
 # 2) Métricas
 # ----------------------------------------------------------------------------
+def comprobar_alineacion(ds_test, ds_pred) -> None:
+    """Real y predicción deben referirse a las MISMAS horas.
+
+    El dataset va en hora local y le faltan las 02:00 de cada cambio a horario
+    de verano; cualquier futuro generado "a mano" se desalinea ahí y el MAPE
+    sale mal sin avisar. Preferimos romper a publicar un número falso.
+    """
+    ds_test, ds_pred = pd.DatetimeIndex(ds_test), pd.DatetimeIndex(ds_pred)
+    if not ds_test.equals(ds_pred):
+        raise ValueError(
+            "Predicción y test no cubren las mismas horas "
+            f"(test {ds_test[0]}->{ds_test[-1]}, pred {ds_pred[0]}->{ds_pred[-1]})"
+        )
+
+
 def metricas(y_real, y_pred) -> dict:
     y_real, y_pred = np.asarray(y_real), np.asarray(y_pred)
     mape = np.mean(np.abs((y_real - y_pred) / y_real)) * 100
@@ -117,13 +140,18 @@ def main():
     )
     modelo.fit(train)
 
-    # Predicción de las 168h de test
-    futuro = modelo.make_future_dataframe(periods=HORIZON, freq="h")
+    # Predecimos sobre las fechas REALES de la serie, no con
+    # make_future_dataframe(): el dataset está en hora local (Europe/Madrid) y
+    # le faltan las 02:00 de cada cambio a horario de verano. Al generar horas
+    # consecutivas, make_future_dataframe inventaría esa hora inexistente y el
+    # pronóstico quedaría desplazado 1 posición respecto al test.
+    futuro = serie[["ds"]]
     fcst = modelo.predict(futuro)
     pred = fcst.iloc[-HORIZON:][["ds", "yhat", "yhat_lower", "yhat_upper"]]
 
+    comprobar_alineacion(test["ds"], pred["ds"])
     m = metricas(test["y"].to_numpy(), pred["yhat"].to_numpy())
-    print("\n=== BASELINE PROPHET (holdout 7 días) ===")
+    print(f"\n=== BASELINE PROPHET (holdout {HORIZON_DIAS} días) ===")
     for k, v in m.items():
         print(f"  {k:10}: {v:8.2f}")
 
@@ -133,7 +161,9 @@ def main():
     ax.plot(pred["ds"], pred["yhat"], label="Prophet", color="#e25", lw=1.8)
     ax.fill_between(pred["ds"], pred["yhat_lower"], pred["yhat_upper"],
                     color="#e25", alpha=0.15, label="Intervalo 80%")
-    ax.set_title(f"Baseline Prophet — MAPE {m['MAPE_%']:.2f}%  (7 días)")
+    ax.set_title(
+        f"Baseline Prophet — MAPE {m['MAPE_%']:.2f}%  ({HORIZON_DIAS} días)"
+    )
     ax.set_ylabel("Demanda (MW)")
     ax.legend()
     fig.autofmt_xdate()

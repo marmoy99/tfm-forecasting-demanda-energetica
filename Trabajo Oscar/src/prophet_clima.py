@@ -13,13 +13,13 @@ Probamos varias combinaciones para VER cuánto aporta cada bloque:
 OJO leakage: un regresor necesita su valor también en el futuro. Aquí usamos el
 clima REAL observado en el test = asumir "previsión meteo perfecta". Es lo
 estándar para aislar el valor del modelo; en producción vendría de una
-previsión a 7 días (AEMET/Open-Meteo), que a ese horizonte es muy buena.
+previsión a 3 días (AEMET/Open-Meteo), que a ese horizonte es muy buena.
 """
 from prophet import Prophet
 
 # Reutilizamos la lógica ya escrita y validada del baseline
 from prophet_baseline import (
-    cargar_datos, festivos_espana, metricas, HORIZON, FIGS,
+    cargar_datos, festivos_espana, metricas, HORIZON, HORIZON_DIAS, FIGS,
 )
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -70,7 +70,9 @@ def main():
         print(f"Entrenando: {nombre} ...")
         resultados[nombre] = entrenar(serie, regs, anios)
 
-    print("\n=== COMPARATIVA (holdout 7 días, 25-31 mar 2026) ===")
+    ini_test, fin_test = serie["ds"].iloc[-HORIZON], serie["ds"].iloc[-1]
+    print(f"\n=== COMPARATIVA (holdout {HORIZON_DIAS} días, "
+          f"{ini_test:%d-%b} a {fin_test:%d-%b-%Y}) ===")
     print(f"{'Modelo':22} {'MAPE %':>8} {'MAE MW':>9} {'RMSE MW':>9}")
     base = resultados["baseline (sin clima)"]["MAPE_%"]
     for nombre, r in resultados.items():

@@ -1,10 +1,10 @@
 """
 Fase 3 — Validación WALK-FORWARD de Prophet.
 
-Un solo holdout (1 semana) no es fiable: esa semana pudo ser fácil o difícil.
-El walk-forward evalúa el modelo en MUCHAS semanas, recorriendo el calendario:
+Un solo holdout no es fiable: esos días pudieron ser fáciles o difíciles.
+El walk-forward evalúa el modelo en MUCHAS ventanas, recorriendo el calendario:
 
-    cutoff_1 -> entreno hasta ahí, predigo los 7 días siguientes, mido MAPE
+    cutoff_1 -> entreno hasta ahí, predigo los 3 días siguientes, mido MAPE
     cutoff_2 = cutoff_1 + 30 días -> idem
     ...
 
@@ -25,7 +25,7 @@ import matplotlib.pyplot as plt
 from prophet import Prophet
 
 from prophet_baseline import (
-    cargar_datos, festivos_espana, metricas, HORIZON, FIGS, ROOT,
+    cargar_datos, festivos_espana, metricas, HORIZON, HORIZON_DIAS, FIGS, ROOT,
 )
 
 warnings.filterwarnings("ignore")
@@ -69,9 +69,10 @@ def main():
     )
     anios = range(serie.ds.dt.year.min(), serie.ds.dt.year.max() + 2)
 
-    # Cutoffs: hacia atrás desde (fin - 7 días), cada STEP_DAYS
+    # Cutoffs: hacia atrás desde (fin - horizonte), cada STEP_DAYS. Se resta el
+    # horizonte para que la última ventana tenga test completo.
     fin = serie.ds.max()
-    cutoffs = [fin - pd.Timedelta(days=7 + STEP_DAYS * i)
+    cutoffs = [fin - pd.Timedelta(days=HORIZON_DIAS + STEP_DAYS * i)
                for i in range(N_VENTANAS)][::-1]
 
     filas = []
@@ -107,7 +108,7 @@ def main():
         ax.plot(sub["cutoff"], sub["MAPE_%"], marker="o",
                 label=f"{nombre} (media {sub['MAPE_%'].mean():.2f}%)")
     ax.axhline(3, color="green", ls="--", lw=1, label="Objetivo TFM (3%)")
-    ax.set_title("Walk-forward: MAPE a 7 días por ventana")
+    ax.set_title(f"Walk-forward: MAPE a {HORIZON_DIAS} días por ventana")
     ax.set_ylabel("MAPE (%)")
     ax.set_xlabel("Fecha de corte (cutoff)")
     ax.legend()

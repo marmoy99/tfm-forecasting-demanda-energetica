@@ -23,7 +23,7 @@ import matplotlib.pyplot as plt
 from prophet import Prophet
 
 from prophet_baseline import (
-    cargar_datos, festivos_espana, metricas, HORIZON, FIGS, ROOT,
+    cargar_datos, festivos_espana, metricas, HORIZON, HORIZON_DIAS, FIGS, ROOT,
 )
 
 warnings.filterwarnings("ignore")
@@ -69,7 +69,7 @@ def main():
     anios = range(serie.ds.dt.year.min(), serie.ds.dt.year.max() + 2)
 
     fin = serie.ds.max()
-    cutoffs = [fin - pd.Timedelta(days=7 + STEP_DAYS * i)
+    cutoffs = [fin - pd.Timedelta(days=HORIZON_DIAS + STEP_DAYS * i)
                for i in range(N_VENTANAS)][::-1]
 
     filas = []
@@ -100,7 +100,7 @@ def main():
         ax.plot(sub["cutoff"], sub["MAPE_%"], marker="o",
                 label=f"{nombre} (media {sub['MAPE_%'].mean():.2f}%)")
     ax.axhline(3, color="green", ls="--", lw=1, label="Objetivo TFM (3%)")
-    ax.set_title("Expanding vs Rolling window — MAPE a 7 días")
+    ax.set_title(f"Expanding vs Rolling window — MAPE a {HORIZON_DIAS} días")
     ax.set_ylabel("MAPE (%)")
     ax.set_xlabel("Fecha de corte (cutoff)")
     ax.legend()
