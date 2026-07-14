@@ -9,18 +9,24 @@ import os
 CARPETA_SCRIPT = os.path.dirname(os.path.abspath(__file__))
 FICHERO = os.path.join(CARPETA_SCRIPT, "..", "..", "..", "Trabajo Miguel", "data", "processed", "dataset_modelado.csv")
 FICHERO_GRAFICA = os.path.join(CARPETA_SCRIPT, "imagenes_Generadas", "prophet_final.png")
+FICHERO_PREDICCION = os.path.join(CARPETA_SCRIPT, "..", "..", "..", "reports", "predictions" ,"prediccion_prophet_final.csv")
 
 # Variables globales, editar a necesidad
 REGRESORES = ["HDD", "CDD", "humedad_relativa", "velocidad_viento", "radiacion_solar"]
+FECHA_CORTE_FINAL = "2026-03-22 23:00:00"
 INTERVALO_HORAS_GRAFICA = 12
 DIAS_A_PREDECIR = 3
-DIAS_HISTORICO_GRAFICA = 7   # cuántos días reales previos mostrar en el gráfico
+DIAS_HISTORICO_GRAFICA = 7
 
 df = pd.read_csv(FICHERO, parse_dates=["datetime"])
 
 d = df[["datetime", "demanda_mw"] + REGRESORES].rename(
     columns={"datetime": "ds", "demanda_mw": "y"}
 )
+
+# CAMBIO DE LA FECHA: recortamos los datos hasta la fecha de corte fija.
+# Así "la última fecha conocida" es siempre la misma, no la que traiga el archivo.
+d = d[d["ds"] <= FECHA_CORTE_FINAL]
 
 modelo = Prophet(
     daily_seasonality=True,
@@ -33,11 +39,18 @@ modelo.add_country_holidays(country_name="ES")
 for variable in REGRESORES:
     modelo.add_regressor(variable)
 
-# Entrenamos con todo el histórico (ya no reservamos test: aquí no evaluamos, predecimos)
 modelo.fit(d)
 
-# Generamos las fechas futuras (las próximas DIAS_A_PREDECIR, hora a hora)
-futuro = modelo.make_future_dataframe(periods=DIAS_A_PREDECIR * 24, freq="h")
+# Calculamos exactamente hasta cuándo queremos llegar (corte + días a predecir)
+fecha_fin_deseada = pd.to_datetime(FECHA_CORTE_FINAL) + pd.Timedelta(days=DIAS_A_PREDECIR)
+
+# Vemos cuál es el último dato real que tiene Prophet
+ultima_fecha_real = d["ds"].max()
+
+# Calculamos las horas exactas de diferencia
+horas_a_predecir = int((fecha_fin_deseada - ultima_fecha_real).total_seconds() / 3600)
+
+futuro = modelo.make_future_dataframe(periods=horas_a_predecir, freq="h")
 
 
 def imputar_clima_futuro(historico, futuro):
@@ -73,7 +86,6 @@ def imputar_clima_futuro(historico, futuro):
     return futuro
 
 
-# Rellenamos el clima: las fechas conocidas con su valor real, las futuras con perfiles
 futuro = futuro.merge(d[["ds"] + REGRESORES], on="ds", how="left")
 mask_futuro = futuro["ds"] > d["ds"].max()
 imputado = imputar_clima_futuro(d, futuro[mask_futuro])
@@ -82,30 +94,39 @@ for variable in REGRESORES:
 
 prediccion = modelo.predict(futuro)
 
-# Solo nos interesan las horas nuevas (las que no estaban en 'd')
-nuevas = prediccion[prediccion["ds"] > d["ds"].max()]
+nuevas = prediccion[prediccion["ds"] >= "2026-03-23 00:00:00"]
 print(nuevas[["ds", "yhat"]].to_string(index=False))
 
-# ---------------------------------------------------------------------------
-# Gráfica: demanda real de los últimos días + predicción, con línea de corte
-# ---------------------------------------------------------------------------
-fecha_corte = d["ds"].max()                                  # última hora conocida
+# Guardar la predicción para la comparativa entre modelos
+salida_prophet = futuro[futuro["ds"] >= "2026-03-23 00:00:00"].copy()
+
+# Le pegamos la predicción calculada ('yhat')
+salida_prophet = salida_prophet.merge(nuevas[["ds", "yhat"]], on="ds", how="left")
+
+# Renombramos para usar la misma nomenclatura que SARIMAX y LightGBM
+salida_prophet = salida_prophet.rename(columns={"ds": "datetime", "yhat": "prediccion_demanda_mw"})
+
+# Añadimos la trazabilidad
+salida_prophet["modelo"] = "Prophet"
+salida_prophet["fecha_corte_entrenamiento"] = FECHA_CORTE_FINAL
+salida_prophet["meteo_futura_metodo"] = "perfil_historico_medio_mes_hora"
+
+salida_prophet.to_csv(FICHERO_PREDICCION, index=False, encoding="utf-8-sig")
+
+# Grafica: historico reciente + prediccion, con linea de corte
+fecha_corte = d["ds"].max()
 inicio_historico = fecha_corte - pd.Timedelta(days=DIAS_HISTORICO_GRAFICA)
-historico_reciente = d[d["ds"] >= inicio_historico]          # días reales previos
+historico_reciente = d[d["ds"] >= inicio_historico]
 
 plt.figure(figsize=(14, 5))
-plt.plot(historico_reciente["ds"], historico_reciente["y"],
-         label="Demanda observada", linewidth=2)
-plt.plot(nuevas["ds"], nuevas["yhat"],
-         label="Predicción Prophet", linewidth=2, color="darkorange")
+plt.plot(historico_reciente["ds"], historico_reciente["y"], label="Demanda observada", linewidth=2)
+plt.plot(nuevas["ds"], nuevas["yhat"], label="Predicción Prophet", linewidth=2, color="darkorange")
 plt.axvline(fecha_corte, linestyle="--", color="gray", label="Corte (fin de datos)")
 plt.legend()
 plt.ylabel("MW")
 plt.title(f"Predicción de los próximos {DIAS_A_PREDECIR} días")
-
 plt.gca().xaxis.set_major_locator(mdates.HourLocator(interval=INTERVALO_HORAS_GRAFICA))
 plt.gca().xaxis.set_major_formatter(mdates.DateFormatter("%d/%m %H:%M"))
 plt.gcf().autofmt_xdate()
-
 plt.tight_layout()
 plt.savefig(FICHERO_GRAFICA, dpi=110)
