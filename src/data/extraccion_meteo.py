@@ -126,9 +126,10 @@ END_DATE: str   = (_today - timedelta(days=5)).isoformat()   # límite API archi
 # Temperatura de confort para HDD/CDD (estándar energético europeo)
 COMFORT_TEMP: float = 18.0
 
-# Outputs
-OUTPUT_DIR = Path("data/raw")
-PROCESSED_DIR = Path("data/processed")
+# Outputs, anclados a la raíz del repositorio (el script vive en src/data/)
+_ROOT = Path(__file__).resolve().parents[2]
+OUTPUT_DIR = _ROOT / "data" / "raw"
+PROCESSED_DIR = _ROOT / "data" / "processed"
 
 # IDs tablas INE — Padrón Municipal Continuo (operación 22)
 INE_TABLE_POBLACION_PROV      = 2852   # Población por provincias y sexo

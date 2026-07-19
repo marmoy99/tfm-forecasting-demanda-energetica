@@ -32,8 +32,10 @@ logging.basicConfig(
 )
 log = logging.getLogger(__name__)
 
-RAW_DIR       = Path("data/raw")
-PROCESSED_DIR = Path("data/processed")
+# Rutas ancladas a la raíz del repositorio (el script vive en src/data/)
+ROOT          = Path(__file__).resolve().parents[2]
+RAW_DIR       = ROOT / "data" / "raw"
+PROCESSED_DIR = ROOT / "data" / "processed"
 PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
 
 DEMAND_CSV       = RAW_DIR  / "demanda_peninsular_horaria.csv"

@@ -58,7 +58,8 @@ from dateutil.relativedelta import relativedelta
 BASE_URL = "https://api.esios.ree.es"
 DEFAULT_INDICATOR_ID = 1293
 
-PROJECT_ROOT = Path(__file__).resolve().parent
+# Raíz del repositorio (el script vive en src/data/)
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 RAW_DIR = PROJECT_ROOT / "data" / "raw"
 PROCESSED_DIR = PROJECT_ROOT / "data" / "processed"
 
@@ -289,7 +290,8 @@ class EsiosDemandExtractor:
         log.info("QA demanda: %s", report)
 
         self.save(raw, RAW_DIR, "demanda_esios_raw")
-        self.save(clean, PROCESSED_DIR, "demanda_peninsular_horaria")
+        # A data/raw: es el punto de entrada de feature_engineering.py
+        self.save(clean, RAW_DIR, "demanda_peninsular_horaria")
 
         return {
             "demanda_esios_raw": raw,
