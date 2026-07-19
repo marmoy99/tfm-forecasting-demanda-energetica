@@ -146,6 +146,11 @@ def cargar_y_preparar_dataset(ruta: str) -> pd.DataFrame:
         raise FileNotFoundError(f"No se encontró el dataset: {ruta}")
 
     df = pd.read_csv(ruta, parse_dates=["datetime"])
+
+    # El estudio termina el 31-mar-2026: abril-2026 es dato provisional de Esios
+    # (demanda ~40% por debajo de lo real) y quedo excluido por decision del grupo.
+    df = df[df["datetime"] <= "2026-03-31 23:00:00"]
+
     validar_columnas(df, ["datetime", "demanda_mw"] + REGRESORES_METEO)
 
     df = df.set_index("datetime").sort_index()

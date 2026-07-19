@@ -33,6 +33,9 @@ st.markdown(GLOBAL_CSS, unsafe_allow_html=True)
 @st.cache_data(show_spinner="Cargando dataset…")
 def load_data() -> pd.DataFrame:
     df = pd.read_csv(DATA, parse_dates=["datetime"])
+    # El estudio termina el 31-mar-2026: abril-2026 es dato provisional de Esios
+    # (demanda ~40% por debajo de lo real) y quedo excluido por decision del grupo.
+    df = df[df["datetime"] <= "2026-03-31 23:00:00"]
     return df.sort_values("datetime").reset_index(drop=True)
 
 

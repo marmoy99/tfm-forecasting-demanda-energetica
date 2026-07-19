@@ -15,6 +15,10 @@ N_VENTANAS = 12        # numero de cortes (aprox. un año, las 4 estaciones)
 
 df = pd.read_csv(FICHERO, parse_dates=["datetime"])
 
+# El estudio termina el 31-mar-2026: abril-2026 es dato provisional de Esios
+# (demanda ~40% por debajo de lo real) y quedo excluido por decision del grupo.
+df = df[df["datetime"] <= "2026-03-31 23:00:00"]
+
 # Prophet necesita las columnas 'ds' (fecha) e 'y' (demanda)
 d = df[["datetime", "demanda_mw"] + REGRESORES].rename(
     columns={"datetime": "ds", "demanda_mw": "y"}
