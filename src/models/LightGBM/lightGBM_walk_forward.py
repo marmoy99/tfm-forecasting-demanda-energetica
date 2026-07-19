@@ -6,7 +6,7 @@ import os
 
 # Definicion de fichero
 CARPETA_SCRIPT = os.path.dirname(os.path.abspath(__file__))
-FICHERO = os.path.join(CARPETA_SCRIPT, "..", "..", "..", "Trabajo Miguel", "data", "processed", "dataset_modelado.csv")
+FICHERO = os.path.join(CARPETA_SCRIPT, "..", "..", "..", "data", "processed", "dataset_modelado.csv")
 
 # Variables globales, editar a necesidad
 REGRESORES_CLIMA = ["HDD", "CDD", "humedad_relativa", "velocidad_viento", "radiacion_solar"]

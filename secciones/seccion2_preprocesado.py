@@ -17,7 +17,7 @@ import streamlit as st
 
 from theme import C_BLUE, C_AQUA, C_YELLOW, C_RED, C_MUTED, fig_base, section_title, show_fig
 
-RAW_DEMAND = Path(__file__).resolve().parents[1] / "Trabajo Miguel" / "data" / "raw" / "demanda_peninsular_horaria.csv"
+RAW_DEMAND = Path(__file__).resolve().parents[1] / "data" / "raw" / "demanda_peninsular_horaria.csv"
 
 OUTLIER_DATES = {
     "Apagón · 28 abr 2025": "2025-04-28",

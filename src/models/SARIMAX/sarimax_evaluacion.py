@@ -42,13 +42,12 @@ RAIZ_REPOSITORIO = os.path.abspath(os.path.join(CARPETA_SCRIPT, "..", "..", ".."
 
 FICHERO = os.path.join(
     RAIZ_REPOSITORIO,
-    "Trabajo Miguel",
     "data",
     "processed",
     "dataset_modelado.csv",
 )
 
-CARPETA_GRAFICAS = os.path.join(CARPETA_SCRIPT, "imagenes_generadas")
+CARPETA_GRAFICAS = os.path.join(RAIZ_REPOSITORIO, "reports", "figures")
 os.makedirs(CARPETA_GRAFICAS, exist_ok=True)
 
 FICHERO_GRAFICA = os.path.join(CARPETA_GRAFICAS, "sarimax_evaluacion.png")

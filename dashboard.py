@@ -17,7 +17,7 @@ from secciones import (seccion1_exploracion, seccion2_preprocesado,
 
 # ── Rutas ──────────────────────────────────────────────────────────────────────
 ROOT = Path(__file__).parent
-DATA = ROOT / "Trabajo Miguel" / "data" / "processed" / "dataset_modelado.csv"
+DATA = ROOT / "data" / "processed" / "dataset_modelado.csv"
 
 # ── Config página ──────────────────────────────────────────────────────────────
 st.set_page_config(

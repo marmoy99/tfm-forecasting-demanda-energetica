@@ -33,6 +33,7 @@ prophet>=1.1.5
 
 # --- Machine Learning (modelo principal) ---
 lightgbm>=4.1.0
+skforecast>=0.13.0        # Forecasting recursivo con LightGBM
 optuna>=3.4.0             # Tuning de hiperparámetros
 
 # --- Deep Learning (LSTM, opcional) ---

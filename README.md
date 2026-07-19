@@ -7,9 +7,9 @@ EBIS Business Techschool · Marzo 2026
 
 ## Descripción del proyecto
 
-Sistema de predicción de la **demanda eléctrica horaria peninsular** a 7 días vista, orientado a optimizar las compras en el mercado mayorista (OMIE) de una comercializadora eléctrica.
+Sistema de predicción de la **demanda eléctrica horaria peninsular** a 3 días (72 h) vista, orientado a optimizar las compras en el mercado mayorista (OMIE) de una comercializadora eléctrica.
 
-**Objetivo cuantificable:** MAPE < 3% en predicción horaria a 7 días, mejorando los baselines estadísticos en al menos un 15% relativo.
+**Objetivo cuantificable:** MAPE < 3% en predicción horaria a 3 días, mejorando los baselines estadísticos en al menos un 15% relativo.
 
 ---
 
@@ -18,20 +18,32 @@ Sistema de predicción de la **demanda eléctrica horaria peninsular** a 7 días
 ```
 tfm-forecasting-demanda-energetica/
 ├── data/
-│   ├── raw/                  # Datos descargados sin modificar (no versionados)
-│   └── processed/            # Dataset limpio y features (no versionados)
-├── notebooks/                # Jupyter Notebooks de EDA y experimentación
+│   ├── raw/                          # Demanda cruda (usada por el dashboard)
+│   ├── processed/
+│   │   └── dataset_modelado.csv      # Dataset congelado del proyecto (2021 → abr-2026)
+│   └── README_data.txt               # Descripción del dataset y su construcción
+├── notebooks/
+│   ├── 01_extraccion_demanda_esios.ipynb
+│   └── 05_modelos_clasicos.ipynb     # Estudio Prophet / SARIMAX / comparativa
 ├── src/
-│   ├── ingestion/            # Scripts de descarga (REE, AEMET)
-│   ├── preprocessing/        # Limpieza y feature engineering
-│   ├── models/               # Entrenamiento e inferencia
-│   └── evaluation/           # Métricas y comparativas
-├── models/                   # Modelos serializados (no versionados)
-├── dashboard/                # App Streamlit
-├── docs/                     # Memoria y presentación
-├── config.py                 # Constantes y configuración global
+│   ├── data/                         # Extracción (Esios, Open-Meteo) y feature engineering
+│   └── models/
+│       ├── Prophet/                  # Evaluación, walk-forward y predicción final
+│       ├── SARIMAX/                  # Clásico, armónico y comparación entre ambos
+│       ├── LightGBM/                 # Walk-forward y predicción final
+│       ├── prophet_*.py / sarimax_armonico.py   # Estudio walk-forward (comparten prophet_baseline.py)
+│       └── comparacion_modelos_final.py         # Figura comparativa de los 3 modelos
+├── reports/
+│   ├── model_results/                # Resultados walk-forward por modelo
+│   ├── model_comparison/             # Comparativas entre modelos
+│   ├── predictions/                  # Predicciones finales (72 h)
+│   └── figures/                      # Todas las gráficas generadas
+├── dashboard.py                      # App Streamlit (+ secciones/ y theme.py)
+├── docs/                             # Documentación del proyecto
+├── logs/                             # Registro de experimentos y decisiones
+├── legacy/                           # Material superado (se conserva por trazabilidad)
 ├── requirements.txt
-└── .env.example              # Plantilla de credenciales
+└── .env.example                      # Plantilla de credenciales
 ```
 
 ---
@@ -70,10 +82,12 @@ Necesitáis dos API keys (ambas gratuitas):
 ### 4. Descargar los datos históricos
 
 ```bash
-python src/ingestion/fetch_ree.py
-python src/ingestion/fetch_aemet.py
-python src/ingestion/build_dataset.py
+python src/data/extraccion_demanda.py
+python src/data/extraccion_meteo.py
+python src/data/feature_engineering.py
 ```
+
+(El dataset ya congelado está versionado en `data/processed/dataset_modelado.csv`; estos scripts solo hacen falta para regenerarlo o ampliarlo.)
 
 ---
 

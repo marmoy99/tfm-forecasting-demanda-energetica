@@ -50,14 +50,15 @@ RAIZ_REPOSITORIO = os.path.abspath(os.path.join(CARPETA_SCRIPT, "..", "..", ".."
 
 FICHERO = os.path.join(
     RAIZ_REPOSITORIO,
-    "Trabajo Miguel",
     "data",
     "processed",
     "dataset_modelado.csv",
 )
 
 FICHERO_RESULTADOS = os.path.join(
-    CARPETA_SCRIPT,
+    RAIZ_REPOSITORIO,
+    "reports",
+    "model_results",
     "resultados_sarimax_walk_forward.csv",
 )
 

@@ -285,7 +285,7 @@ No tiene exactamente el mismo significado que en LightGBM, donde `lags` represen
 ### 10.3. Imagen de predicción
 
 ```text
-src/models/SARIMAX/imagenes_generadas/sarimax_armonico_final.png
+reports/figures/sarimax_armonico_final.png
 ```
 
 La figura muestra:

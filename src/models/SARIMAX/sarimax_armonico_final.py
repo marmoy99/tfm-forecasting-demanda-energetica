@@ -66,7 +66,6 @@ RAIZ_REPOSITORIO = os.path.abspath(
 
 FICHERO_DATOS = os.path.join(
     RAIZ_REPOSITORIO,
-    "Trabajo Miguel",
     "data",
     "processed",
     "dataset_modelado.csv",
@@ -102,8 +101,9 @@ FICHERO_PREDICCION = os.path.join(
 )
 
 CARPETA_GRAFICAS = os.path.join(
-    CARPETA_SCRIPT,
-    "imagenes_generadas",
+    RAIZ_REPOSITORIO,
+    "reports",
+    "figures",
 )
 
 FICHERO_GRAFICA = os.path.join(

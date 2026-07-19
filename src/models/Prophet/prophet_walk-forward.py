@@ -4,7 +4,7 @@ import os
 
 # Definicion de ficheros
 CARPETA_SCRIPT = os.path.dirname(os.path.abspath(__file__))
-FICHERO = os.path.join(CARPETA_SCRIPT, "..", "..", "..", "Trabajo Miguel", "data", "processed", "dataset_modelado.csv")
+FICHERO = os.path.join(CARPETA_SCRIPT, "..", "..", "..", "data", "processed", "dataset_modelado.csv")
 FICHERO_RESULTADOS = os.path.join(CARPETA_SCRIPT, "..", "..", "..", "reports", "model_results", "resultados_prophet_walk_forward.csv")
 
 # Variables globales, editar a necesidad

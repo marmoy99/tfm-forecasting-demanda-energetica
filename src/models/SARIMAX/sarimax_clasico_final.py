@@ -24,8 +24,8 @@ Escenario final:
     - demanda_lag_168h futura: tomada de la demanda observada 168 horas antes.
 
 Salidas:
-    - src/models/SARIMAX/prediccion_sarimax_final.csv
-    - src/models/SARIMAX/imagenes_generadas/sarimax_final.png
+    - reports/predictions/prediccion_sarimax_final.csv
+    - reports/figures/sarimax_final.png
 """
 
 import os
@@ -54,17 +54,18 @@ RAIZ_REPOSITORIO = os.path.abspath(os.path.join(CARPETA_SCRIPT, "..", "..", ".."
 
 FICHERO = os.path.join(
     RAIZ_REPOSITORIO,
-    "Trabajo Miguel",
     "data",
     "processed",
     "dataset_modelado.csv",
 )
 
-CARPETA_GRAFICAS = os.path.join(CARPETA_SCRIPT, "imagenes_generadas")
+CARPETA_GRAFICAS = os.path.join(RAIZ_REPOSITORIO, "reports", "figures")
 os.makedirs(CARPETA_GRAFICAS, exist_ok=True)
 
 FICHERO_PREDICCION = os.path.join(
-    CARPETA_SCRIPT,
+    RAIZ_REPOSITORIO,
+    "reports",
+    "predictions",
     "prediccion_sarimax_final.csv",
 )
 

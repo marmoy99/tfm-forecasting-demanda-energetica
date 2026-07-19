@@ -37,7 +37,6 @@ RAIZ_REPOSITORIO = os.path.abspath(
 
 FICHERO_DATOS = os.path.join(
     RAIZ_REPOSITORIO,
-    "Trabajo Miguel",
     "data",
     "processed",
     "dataset_modelado.csv",

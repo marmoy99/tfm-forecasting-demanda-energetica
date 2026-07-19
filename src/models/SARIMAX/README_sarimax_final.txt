@@ -94,8 +94,8 @@ Salidas generadas
 -----------------
 El script guarda:
 
-    src/models/SARIMAX/prediccion_sarimax_final.csv
-    src/models/SARIMAX/imagenes_generadas/sarimax_final.png
+    reports/predictions/prediccion_sarimax_final.csv
+    reports/figures/sarimax_final.png
 
 El CSV incluye la predicción horaria y las variables futuras utilizadas por el modelo. Esto permite trazabilidad y revisión posterior.
 
