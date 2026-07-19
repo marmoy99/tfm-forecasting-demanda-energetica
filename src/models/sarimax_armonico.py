@@ -141,7 +141,7 @@ def main():
         print(f"  SARIMAX{order}: MAPE val {mape:.2f}%")
 
     val = pd.DataFrame(filas_val).sort_values("MAPE_val_%")
-    val.to_csv(ROOT / "reports" / "sarimax_validacion.csv", index=False)
+    val.to_csv(ROOT / "reports" / "model_results" / "sarimax_validacion.csv", index=False)
     mejor = ORDENES[[str(o) for o in ORDENES].index(val.iloc[0]["order"])]
     print(f"\nOrden elegido: SARIMAX{mejor}\n")
 
@@ -161,7 +161,7 @@ def main():
                   f"({r['segundos']:.0f}s){aviso}")
 
     res = pd.DataFrame(filas)
-    res.to_csv(ROOT / "reports" / "sarimax_resultados.csv", index=False)
+    res.to_csv(ROOT / "reports" / "model_results" / "sarimax_resultados.csv", index=False)
 
     print(f"\n=== SARIMAX (test, horizonte {HORIZON_DIAS} días) ===")
     resumen = res.groupby("modelo").agg(
@@ -173,7 +173,7 @@ def main():
         print(f"\n AVISO: {(~res['converge']).sum()} ajustes no convergieron.")
 
     # ---- Comparación directa con Prophet (mismas ventanas) ----
-    wf = ROOT / "reports" / "walkforward_resultados.csv"
+    wf = ROOT / "reports" / "model_results" / "walkforward_resultados.csv"
     if wf.exists():
         p = pd.read_csv(wf, parse_dates=["cutoff"])
         p["modelo"] = "prophet " + p["modelo"]

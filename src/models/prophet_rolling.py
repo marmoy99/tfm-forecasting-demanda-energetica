@@ -84,7 +84,7 @@ def main():
                   f"(train {r['n_train']//24}d)")
 
     r = pd.DataFrame(filas)
-    r.to_csv(ROOT / "reports" / "rolling_resultados.csv", index=False)
+    r.to_csv(ROOT / "reports" / "model_results" / "rolling_resultados.csv", index=False)
 
     print("\n=== EXPANDING vs ROLLING (mismas ventanas, modelo clima) ===")
     resumen = r.groupby("estrategia").agg(

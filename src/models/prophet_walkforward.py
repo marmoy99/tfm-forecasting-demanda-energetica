@@ -87,7 +87,7 @@ def main():
                   f"MAPE {res['MAPE_%']:.2f}%")
 
     r = pd.DataFrame(filas)
-    out_csv = ROOT / "reports" / "walkforward_resultados.csv"
+    out_csv = ROOT / "reports" / "model_results" / "walkforward_resultados.csv"
     r.to_csv(out_csv, index=False)
 
     print("\n=== RESUMEN WALK-FORWARD ({} ventanas/modelo) ===".format(
