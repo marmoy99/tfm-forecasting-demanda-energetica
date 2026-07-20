@@ -59,9 +59,12 @@ PLOTLY_BASE = dict(
     paper_bgcolor=C_SURFACE,
     plot_bgcolor=C_SURFACE,
     font=dict(family="system-ui, -apple-system, Segoe UI, sans-serif", color=C_TEXT, size=12),
+    # Márgenes mínimos; automargin los expande hasta que las etiquetas quepan
     margin=dict(l=10, r=10, t=36, b=10),
-    xaxis=dict(showgrid=False, zeroline=False, linecolor=C_GRID, tickfont=dict(color=C_MUTED, size=11)),
-    yaxis=dict(showgrid=True, gridcolor=C_GRID, zeroline=False, tickfont=dict(color=C_MUTED, size=11)),
+    xaxis=dict(showgrid=False, zeroline=False, linecolor=C_GRID,
+               tickfont=dict(color=C_MUTED, size=11), automargin=True),
+    yaxis=dict(showgrid=True, gridcolor=C_GRID, zeroline=False,
+               tickfont=dict(color=C_MUTED, size=11), automargin=True),
     hoverlabel=dict(bgcolor="white", bordercolor=C_GRID, font_size=12, font_color=C_TEXT),
 )
 
@@ -75,6 +78,24 @@ def fig_base(**overrides) -> go.Figure:
 def section_title(text: str) -> str:
     """HTML de un título de sección (usar con st.markdown unsafe_allow_html=True)."""
     return f'<div class="section-title">{text}</div>'
+
+
+def kpi_row(items: list) -> None:
+    """
+    Renderiza una fila de tarjetas KPI, una por columna.
+
+    items: lista de tuplas (label, value, sub).
+    """
+    cols = st.columns(len(items))
+    for col, (label, value, sub) in zip(cols, items):
+        col.markdown(
+            f'<div class="kpi-card">'
+            f'<div class="kpi-label">{label}</div>'
+            f'<div class="kpi-value">{value}</div>'
+            f'<div class="kpi-sub">{sub}</div>'
+            f'</div>',
+            unsafe_allow_html=True,
+        )
 
 
 def show_fig(fig: go.Figure, container=None) -> None:

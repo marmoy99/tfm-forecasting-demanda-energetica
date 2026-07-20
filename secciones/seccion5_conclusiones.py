@@ -11,7 +11,7 @@ from pathlib import Path
 import pandas as pd
 import streamlit as st
 
-from theme import section_title
+from theme import section_title, kpi_row
 
 REPORTS = Path(__file__).resolve().parents[1] / "reports"
 OBJETIVO_MAPE = 3.0
@@ -44,21 +44,12 @@ def render(df_dataset: pd.DataFrame) -> None:
     )
 
     # ── KPIs de cierre ──────────────────────────────────────────────────────────
-    c1, c2, c3, c4 = st.columns(4)
-    for col, label, value, sub in [
-        (c1, "Objetivo",  f"< {OBJETIVO_MAPE:.0f} % MAPE", "plan del TFM"),
-        (c2, "Resultado", f"{m['LightGBM']:.2f} % MAPE", "LightGBM · walk-forward"),
-        (c3, "vs Prophet", f"−{mejora_prophet:.0f} %", "menos error"),
-        (c4, "vs SARIMAX", f"−{mejora_sarimax:.0f} %", "menos error"),
-    ]:
-        col.markdown(
-            f'<div class="kpi-card">'
-            f'<div class="kpi-label">{label}</div>'
-            f'<div class="kpi-value">{value}</div>'
-            f'<div class="kpi-sub">{sub}</div>'
-            f'</div>',
-            unsafe_allow_html=True,
-        )
+    kpi_row([
+        ("Objetivo", f"< {OBJETIVO_MAPE:.0f} % MAPE", "plan del TFM"),
+        ("Resultado", f"{m['LightGBM']:.2f} % MAPE", "LightGBM · walk-forward"),
+        ("vs Prophet", f"−{mejora_prophet:.0f} %", "menos error"),
+        ("vs SARIMAX", f"−{mejora_sarimax:.0f} %", "menos error"),
+    ])
     st.markdown("<br>", unsafe_allow_html=True)
 
     # ── El recorrido ────────────────────────────────────────────────────────────

@@ -16,7 +16,7 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from theme import (C_BLUE, C_AQUA, C_YELLOW, C_GRID, C_MUTED,
-                   fig_base, section_title, show_fig)
+                   fig_base, section_title, show_fig, kpi_row)
 
 REPORTS = Path(__file__).resolve().parents[1] / "reports"
 
@@ -64,21 +64,12 @@ def render(df_dataset: pd.DataFrame) -> None:
     )
 
     # ── KPIs ────────────────────────────────────────────────────────────────────
-    c1, c2, c3, c4 = st.columns(4)
-    for col, label, value, sub in [
-        (c1, "Mejor modelo", mejor_modelo, "menor MAPE medio"),
-        (c2, "MAPE medio", f"{mejor_mape:.2f} %", f"objetivo < {OBJETIVO_MAPE:.0f} %"),
-        (c3, "Cortes evaluados", f"{len(cortes)}", "mensuales, walk-forward"),
-        (c4, "Modelos comparados", "3", "+ baselines ingenuos"),
-    ]:
-        col.markdown(
-            f'<div class="kpi-card">'
-            f'<div class="kpi-label">{label}</div>'
-            f'<div class="kpi-value">{value}</div>'
-            f'<div class="kpi-sub">{sub}</div>'
-            f'</div>',
-            unsafe_allow_html=True,
-        )
+    kpi_row([
+        ("Mejor modelo", mejor_modelo, "menor MAPE medio"),
+        ("MAPE medio", f"{mejor_mape:.2f} %", f"objetivo < {OBJETIVO_MAPE:.0f} %"),
+        ("Cortes evaluados", f"{len(cortes)}", "mensuales, walk-forward"),
+        ("Modelos comparados", "3", "+ baselines ingenuos"),
+    ])
     st.markdown("<br>", unsafe_allow_html=True)
 
     # ══════════════════════════════════════════════════════════════════════════

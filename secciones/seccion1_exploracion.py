@@ -9,7 +9,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
-from theme import C_BLUE, C_AQUA, C_YELLOW, fig_base, section_title, show_fig
+from theme import C_BLUE, C_AQUA, C_YELLOW, fig_base, section_title, show_fig, kpi_row
 
 
 def render(df: pd.DataFrame) -> None:
@@ -21,21 +21,12 @@ def render(df: pd.DataFrame) -> None:
     pico_mw   = f"{df['demanda_mw'].max():,.0f} MW"
     minimo_mw = f"{df['demanda_mw'].min():,.0f} MW"
 
-    c1, c2, c3, c4 = st.columns(4)
-    for col, label, value, sub in [
-        (c1, "Período", periodo,         f"{len(df):,} registros horarios"),
-        (c2, "Demanda media", media_mw,  "promedio histórico"),
-        (c3, "Demanda pico",  pico_mw,   "máximo registrado"),
-        (c4, "Demanda mínima", minimo_mw, "mínimo registrado"),
-    ]:
-        col.markdown(
-            f'<div class="kpi-card">'
-            f'<div class="kpi-label">{label}</div>'
-            f'<div class="kpi-value">{value}</div>'
-            f'<div class="kpi-sub">{sub}</div>'
-            f'</div>',
-            unsafe_allow_html=True,
-        )
+    kpi_row([
+        ("Período", periodo, f"{len(df):,} registros horarios"),
+        ("Demanda media", media_mw, "promedio histórico"),
+        ("Demanda pico", pico_mw, "máximo registrado"),
+        ("Demanda mínima", minimo_mw, "mínimo registrado"),
+    ])
 
     st.markdown("<br>", unsafe_allow_html=True)
 

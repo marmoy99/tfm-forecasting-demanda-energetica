@@ -13,7 +13,7 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from theme import (C_BLUE, C_AQUA, C_YELLOW, C_MUTED, C_GRID,
-                   fig_base, section_title, show_fig)
+                   fig_base, section_title, show_fig, kpi_row)
 
 REPORTS = Path(__file__).resolve().parents[1] / "reports"
 C_REAL = "#3d3d3a"  # gris oscuro para el histórico real
@@ -64,21 +64,12 @@ def render(df_dataset: pd.DataFrame) -> None:
     )
 
     # ── KPIs ────────────────────────────────────────────────────────────────────
-    c1, c2, c3, c4 = st.columns(4)
-    for col, label, value, sub in [
-        (c1, "Horizonte", f"{horas} h", "3 días horarios"),
-        (c2, "Inicio", inicio.strftime("%d %b %Y"), "tras el último dato"),
-        (c3, "Modelo operativo", "LightGBM", f"MAPE esperado {mape_lgb:.2f} %"),
-        (c4, "Modelos comparados", "3", "LightGBM · SARIMAX · Prophet"),
-    ]:
-        col.markdown(
-            f'<div class="kpi-card">'
-            f'<div class="kpi-label">{label}</div>'
-            f'<div class="kpi-value">{value}</div>'
-            f'<div class="kpi-sub">{sub}</div>'
-            f'</div>',
-            unsafe_allow_html=True,
-        )
+    kpi_row([
+        ("Horizonte", f"{horas} h", "3 días horarios"),
+        ("Inicio", inicio.strftime("%d %b %Y"), "tras el último dato"),
+        ("Modelo operativo", "LightGBM", f"MAPE esperado {mape_lgb:.2f} %"),
+        ("Modelos comparados", "3", "LightGBM · SARIMAX · Prophet"),
+    ])
     st.markdown("<br>", unsafe_allow_html=True)
 
     # Histórico real: últimos 5 días antes del corte
