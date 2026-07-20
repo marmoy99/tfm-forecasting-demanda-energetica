@@ -12,11 +12,11 @@ RAIZ_REPOSITORIO = os.path.abspath(os.path.join(CARPETA_SCRIPT, "..", ".."))
 CARPETA_REPORTS = os.path.join(RAIZ_REPOSITORIO, "reports")
 
 FICHERO_DATASET = os.path.join(
-    RAIZ_REPOSITORIO, "Trabajo Miguel", "data", "processed", "dataset_modelado.csv"
+    RAIZ_REPOSITORIO, "data", "processed", "dataset_modelado.csv"
 )
-FICHERO_PROPHET = os.path.join(CARPETA_REPORTS, "prediccion_prophet_final.csv")
-FICHERO_SARIMAX = os.path.join(CARPETA_REPORTS, "prediccion_sarimax_final.csv")
-FICHERO_LIGHTGBM = os.path.join(CARPETA_REPORTS, "prediccion_lightgbm_final.csv")
+FICHERO_PROPHET = os.path.join(CARPETA_REPORTS, "predictions", "prediccion_prophet_final.csv")
+FICHERO_SARIMAX = os.path.join(CARPETA_REPORTS, "predictions", "prediccion_sarimax_final.csv")
+FICHERO_LIGHTGBM = os.path.join(CARPETA_REPORTS, "predictions", "prediccion_lightgbm_final.csv")
 
 # La gráfica se guarda dentro de reports/figures
 FICHERO_GRAFICA = os.path.join(CARPETA_REPORTS, "figures", "comparativa_predicciones_finales.png")

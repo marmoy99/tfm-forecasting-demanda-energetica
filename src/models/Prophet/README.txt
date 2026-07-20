@@ -45,8 +45,8 @@ Nota: el clima de esos días futuros no existe en nuestros datos. Se aproxima
 repitiendo el último valor de clima conocido (en un sistema real, aquí iría
 la previsión meteorológica).
 
-Todos comparten el mismo dataset localizado en: Trabajo Miguel/data/processed/dataset_modelado.csv
+Todos comparten el mismo dataset localizado en: data/processed/dataset_modelado.csv
 
-Las imágenes se guardan en imagenes_Generadas. 
+Las imágenes se guardan en reports/figures.
 Cada vez que se ejecuta un script que dibuja, sustituye la imagen anterior, porque se guarda siempre con el mismo nombre. 
 Si quieres conservar varias, cambia el nombre del archivo en la variable correspondiente antes de ejecutar.

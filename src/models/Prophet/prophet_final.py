@@ -7,8 +7,8 @@ import os
 
 # Definicion de ficheros
 CARPETA_SCRIPT = os.path.dirname(os.path.abspath(__file__))
-FICHERO = os.path.join(CARPETA_SCRIPT, "..", "..", "..", "Trabajo Miguel", "data", "processed", "dataset_modelado.csv")
-FICHERO_GRAFICA = os.path.join(CARPETA_SCRIPT, "imagenes_Generadas", "prophet_final.png")
+FICHERO = os.path.join(CARPETA_SCRIPT, "..", "..", "..", "data", "processed", "dataset_modelado.csv")
+FICHERO_GRAFICA = os.path.join(CARPETA_SCRIPT, "..", "..", "..", "reports", "figures", "prophet_final.png")
 FICHERO_PREDICCION = os.path.join(CARPETA_SCRIPT, "..", "..", "..", "reports", "predictions" ,"prediccion_prophet_final.csv")
 
 # Variables globales, editar a necesidad

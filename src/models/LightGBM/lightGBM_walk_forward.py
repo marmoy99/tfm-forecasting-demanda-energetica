@@ -6,7 +6,7 @@ import os
 
 # Definicion de fichero
 CARPETA_SCRIPT = os.path.dirname(os.path.abspath(__file__))
-FICHERO = os.path.join(CARPETA_SCRIPT, "..", "..", "..", "Trabajo Miguel", "data", "processed", "dataset_modelado.csv")
+FICHERO = os.path.join(CARPETA_SCRIPT, "..", "..", "..", "data", "processed", "dataset_modelado.csv")
 
 # Variables globales, editar a necesidad
 REGRESORES_CLIMA = ["HDD", "CDD", "humedad_relativa", "velocidad_viento", "radiacion_solar"]
@@ -17,6 +17,10 @@ LAGS = 72
 
 # skforecast necesita la fecha como índice y frecuencia horaria fija
 df = pd.read_csv(FICHERO, parse_dates=["datetime"]).set_index("datetime").sort_index()
+
+# El estudio termina el 31-mar-2026: abril-2026 es dato provisional de Esios
+# (demanda ~40% por debajo de lo real) y quedo excluido por decision del grupo.
+df = df[df.index <= "2026-03-31 23:00:00"]
 df = df.asfreq("h")
 df["demanda_mw"] = df["demanda_mw"].interpolate()   # rellena los huecos del cambio de hora
 

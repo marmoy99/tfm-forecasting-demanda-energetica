@@ -4,7 +4,7 @@ import os
 
 # Definicion de ficheros
 CARPETA_SCRIPT = os.path.dirname(os.path.abspath(__file__))
-FICHERO = os.path.join(CARPETA_SCRIPT, "..", "..", "..", "Trabajo Miguel", "data", "processed", "dataset_modelado.csv")
+FICHERO = os.path.join(CARPETA_SCRIPT, "..", "..", "..", "data", "processed", "dataset_modelado.csv")
 FICHERO_RESULTADOS = os.path.join(CARPETA_SCRIPT, "..", "..", "..", "reports", "model_results", "resultados_prophet_walk_forward.csv")
 
 # Variables globales, editar a necesidad
@@ -14,6 +14,10 @@ STEP_DIAS = 30         # separacion entre cortes (un corte al mes)
 N_VENTANAS = 12        # numero de cortes (aprox. un año, las 4 estaciones)
 
 df = pd.read_csv(FICHERO, parse_dates=["datetime"])
+
+# El estudio termina el 31-mar-2026: abril-2026 es dato provisional de Esios
+# (demanda ~40% por debajo de lo real) y quedo excluido por decision del grupo.
+df = df[df["datetime"] <= "2026-03-31 23:00:00"]
 
 # Prophet necesita las columnas 'ds' (fecha) e 'y' (demanda)
 d = df[["datetime", "demanda_mw"] + REGRESORES].rename(
