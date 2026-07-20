@@ -105,7 +105,7 @@ def render(df_dataset: pd.DataFrame) -> None:
     fig_wf = fig_base(title="Esquema de validación walk-forward · 12 cortes mensuales")
     for i, corte in enumerate(cortes_ts):
         train_start = corte - pd.Timedelta(days=365)
-        test_end = corte + pd.Timedelta(days=7)
+        test_end = corte + pd.Timedelta(days=3)
         # Barra de entrenamiento (gris)
         fig_wf.add_trace(go.Scatter(
             x=[train_start, corte], y=[i, i],
