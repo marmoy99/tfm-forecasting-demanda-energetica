@@ -66,7 +66,7 @@ with st.sidebar:
 # ══════════════════════════════════════════════════════════════════════════════
 st.markdown("## Forecasting de Demanda Eléctrica Peninsular")
 st.markdown(
-    "Predicción horaria de la demanda de la red eléctrica española a 7 días vista. "
+    "Predicción horaria de la demanda de la red eléctrica española a 3 días vista. "
     "Datos históricos del periodo **2021 – 2026** combinando consumo REE, "
     "meteorología Open-Meteo y demografía INE."
 )
