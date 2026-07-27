@@ -72,15 +72,18 @@ def render(df_dataset: pd.DataFrame) -> None:
     ])
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # Histórico real: últimos 5 días antes del corte
-    hist = df_dataset[df_dataset["datetime"] >= (inicio - pd.Timedelta(days=5))][["datetime", "demanda_mw"]]
-    ultimo_real = hist.iloc[-1]  # para encadenar líneas sin salto
+    # Demanda real: 5 días previos + el propio periodo del pronóstico,
+    # para poder comparar predicción vs. realidad sobre las mismas fechas.
+    hist = df_dataset[(df_dataset["datetime"] >= inicio - pd.Timedelta(days=5)) &
+                      (df_dataset["datetime"] <= fin)][["datetime", "demanda_mw"]]
+    # Punto real inmediatamente anterior al pronóstico (para encadenar sin salto)
+    ultimo_real = df_dataset[df_dataset["datetime"] < inicio].iloc[-1]
 
     # ══════════════════════════════════════════════════════════════════════════
     # 1. TRASPASO HISTÓRICO → FORECAST (3 modelos)
     # ══════════════════════════════════════════════════════════════════════════
     st.markdown(section_title("1 · Del histórico real al pronóstico"), unsafe_allow_html=True)
-    st.caption("Últimos 5 días de demanda real + pronóstico a 72 h de los tres modelos")
+    st.caption("Demanda real (histórico + periodo pronosticado) vs. pronóstico a 72 h de los tres modelos")
 
     fig1 = fig_base(title="Demanda real y predicción a 72 h")
     fig1.add_trace(go.Scatter(
